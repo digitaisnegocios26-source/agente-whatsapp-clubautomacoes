@@ -8,10 +8,12 @@ Atendente virtual com IA (Claude) para WhatsApp, com painel web e conexão por Q
 ## Variáveis
 | Variável | Obrigatória | O que é |
 |---|---|---|
-| ANTHROPIC_API_KEY | sim | Chave da API do Claude |
+| ANTHROPIC_API_KEY | uma das duas | Chave da API do Claude |
+| OPENAI_API_KEY | uma das duas | Chave da API da OpenAI (usada se não houver chave do Claude) |
 | PAINEL_SENHA | sim | Senha do painel |
 | PASTA_DADOS | sim (no Railway: `/data`) | Onde ficam sessão do WhatsApp, informações e conversas |
-| MODELO_IA | não | Padrão `claude-haiku-5-5` |
+| MODELO_IA | não | Modelo do Claude, padrão `claude-haiku-5-5` |
+| MODELO_OPENAI | não | Modelo da OpenAI, padrão `gpt-4.1-mini` |
 | ESPERA_SEGUNDOS | não | Espera antes de responder (padrão 8) |
 | PAUSA_HORAS | não | Pausa do robô depois que um humano assume (padrão 12) |
 

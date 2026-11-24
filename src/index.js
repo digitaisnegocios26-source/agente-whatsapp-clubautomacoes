@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import * as whatsapp from './whatsapp.js';
 import * as atendente from './atendente.js';
+import { iaConfigurada, provedor } from './ia.js';
 import { lerConfig, salvarConfig, configurado } from './config.js';
 
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
@@ -47,7 +48,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC, 'painel.html')));
-app.get('/api/status', (_req, res) => res.json({ ...whatsapp.status, configurado: configurado(), iaConfigurada: !!process.env.ANTHROPIC_API_KEY || process.env.IA_FAKE === '1' }));
+app.get('/api/status', (_req, res) => res.json({ ...whatsapp.status, configurado: configurado(), iaConfigurada: iaConfigurada(), provedorIA: provedor() }));
 app.get('/api/config', (_req, res) => res.json(lerConfig()));
 app.post('/api/config', (req, res) => res.json(salvarConfig(req.body || {})));
 app.post('/api/testar', async (req, res) => {
@@ -76,6 +77,7 @@ whatsapp.onMensagem(atendente.receber);
 whatsapp.iniciar();
 
 if (!SENHA) console.warn('⚠️  Defina a variável PAINEL_SENHA para usar o painel.');
-if (!process.env.ANTHROPIC_API_KEY && process.env.IA_FAKE !== '1') console.warn('⚠️  Defina a variável ANTHROPIC_API_KEY.');
+if (!iaConfigurada()) console.warn('⚠️  Defina ANTHROPIC_API_KEY (Claude) ou OPENAI_API_KEY (OpenAI).');
+else console.log(`🧠 IA: ${process.env.IA_FAKE === '1' ? 'teste' : provedor()}`);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Agente rodando na porta ${PORT}. Abra o endereço do servidor para acessar o painel.`));
