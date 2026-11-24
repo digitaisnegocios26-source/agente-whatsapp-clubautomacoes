@@ -2,6 +2,9 @@
 
 Atendente virtual com IA (Claude) para WhatsApp, com painel web e conexão por QR Code.
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/3_I4ij?referralCode=9clPAm&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+
 ## Variáveis
 | Variável | Obrigatória | O que é |
 |---|---|---|
