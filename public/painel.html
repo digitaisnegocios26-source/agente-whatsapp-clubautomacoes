@@ -1,0 +1,54 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Crect width=%2240%22 height=%2240%22 rx=%2211%22 fill=%22%23fdc504%22/%3E%3C/svg%3E"><title>Painel do Agente · ClubAutomações</title><link rel="stylesheet" href="/estilo.css"></head>
+<body><header class="top"><span class="logo"><svg width="30" height="30" viewBox="0 0 40 40"><rect width="40" height="40" rx="11" fill="#fdc504"/><path d="M11 12.5h18a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H18l-6 4.5v-4.5h-1a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3z" fill="#031937"/><path d="M21.5 15.5l-5 6h4l-1.5 4.5 5-6h-4z" fill="#0e9f55"/></svg><span>Club<b>Automações</b></span></span><form method="post" action="/sair"><button>Sair</button></form></header>
+<main>
+<h1>Painel do agente</h1><p class="sub">Preencha as informações do negócio, conecte o WhatsApp e teste a atendente.</p>
+
+<div id="avisoIA" class="card" hidden><b class="erro">Falta a chave da IA.</b> No Railway, cadastre a variável <b>ANTHROPIC_API_KEY</b> e clique em Deploy.</div>
+
+<section class="card"><h2><span class="n">1</span>Informações do negócio</h2>
+<p class="hint">A atendente responde somente com o que estiver aqui. Salve sempre que mudar algo.</p>
+<form id="cfg">
+<div class="grid"><div><label>Nome do negócio</label><input name="negocio" required></div><div><label>Nome da atendente virtual</label><input name="atendente" required></div></div>
+<div class="grid"><div><label>Tipo de negócio</label><input name="segmento" placeholder="clínica de estética"></div><div><label>WhatsApp que recebe os avisos de lead <span class="hint">(com 55 e DDD)</span></label><input name="numero_avisos" inputmode="numeric" placeholder="5521999999999"></div></div>
+<label>Tom de voz</label><input name="tom">
+<div class="grid"><div><label>Endereço</label><input name="endereco"></div><div><label>Horário de funcionamento</label><input name="horario"></div></div>
+<label>Formas de pagamento</label><input name="formas_pagamento">
+<label>Serviços e preços</label><div id="servicos"></div><button class="s" type="button" id="addserv">+ Adicionar serviço</button>
+<label>Objetivo da conversa</label><input name="objetivo">
+<label>O que ela precisa descobrir <span class="hint">(uma por linha)</span></label><textarea name="perguntas_qualificacao"></textarea>
+<label>Regras <span class="hint">(uma por linha)</span></label><textarea name="regras"></textarea>
+<label>Quando passar para a equipe</label><textarea name="quando_passar_para_humano"></textarea>
+<div class="grid"><div><label>Resposta para áudio</label><input name="mensagem_audio"></div><div><label>Resposta se a IA falhar</label><input name="mensagem_fora_do_ar"></div></div>
+<p class="toggle" style="margin-top:16px"><input type="checkbox" name="ativo" id="ativo"> <label for="ativo" style="margin:0">Atendente ligada (responde no WhatsApp)</label></p>
+<p><button class="p" type="submit">Salvar informações</button><span id="salvo" class="msgsave" hidden>Salvo ✓</span></p>
+</form></section>
+<div class="grid">
+<section class="card"><h2><span class="n">2</span>WhatsApp</h2><div id="wa">Carregando…</div></section>
+<section class="card"><h2><span class="n">3</span>Teste a atendente</h2>
+<p class="hint" style="margin-top:0">Converse como se fosse um cliente. Isto não envia nada pelo WhatsApp.</p>
+<div id="chat" class="chat"></div>
+<form id="chatform" class="chatform"><input id="chatin" placeholder="Escreva como cliente…" autocomplete="off"><button class="p" type="submit">Enviar</button></form>
+<p><button class="s" id="limpar" type="button">Recomeçar conversa</button></p></section>
+</div>
+
+</main>
+<script>
+const $=s=>document.querySelector(s); const f=$('#cfg');
+const api=(u,o={})=>fetch(u,{headers:{'Content-Type':'application/json'},...o}).then(async r=>{if(r.status===401){location='/login';throw 0}const j=await r.json();if(!r.ok)throw new Error(j.erro||'Erro');return j});
+function linhaServ(s={}){const d=document.createElement('div');d.className='row';d.innerHTML='<input placeholder="Serviço" class="sn"><input placeholder="Preço" class="sp"><input placeholder="Detalhes (opcional)" class="sd"><button type="button" class="d">Remover</button>';d.querySelector('.sn').value=s.nome||'';d.querySelector('.sp').value=s.preco||'';d.querySelector('.sd').value=s.detalhes||'';d.querySelector('button').onclick=()=>d.remove();$('#servicos').append(d)}
+$('#addserv').onclick=()=>linhaServ();
+async function carregar(){const c=await api('/api/config');for(const el of f.elements){if(!el.name)continue;const v=c[el.name];if(el.type==='checkbox')el.checked=v!==false;else if(Array.isArray(v))el.value=v.join('\n');else if(v!=null)el.value=v}$('#servicos').innerHTML='';(c.servicos||[]).forEach(linhaServ);if(!(c.servicos||[]).length)linhaServ()}
+f.onsubmit=async e=>{e.preventDefault();const d={};for(const el of f.elements){if(!el.name)continue;d[el.name]=el.type==='checkbox'?el.checked:(['perguntas_qualificacao','regras'].includes(el.name)?el.value.split('\n').map(x=>x.trim()).filter(Boolean):el.value.trim())}
+d.servicos=[...document.querySelectorAll('#servicos .row')].map(r=>({nome:r.querySelector('.sn').value.trim(),preco:r.querySelector('.sp').value.trim(),detalhes:r.querySelector('.sd').value.trim()})).filter(s=>s.nome);
+await api('/api/config',{method:'POST',body:JSON.stringify(d)});$('#salvo').hidden=false;setTimeout(()=>$('#salvo').hidden=true,2500)};
+async function status(){try{const s=await api('/api/status');$('#avisoIA').hidden=s.iaConfigurada;const w=$('#wa');
+if(s.estado==='conectado'){w.innerHTML='<p><span class="pill ok">Conectado</span></p><p>Número: <b>'+(s.numero||'')+'</b></p><p class="hint">A atendente já responde quem mandar mensagem para este número.</p><p><button class="d" id="desc">Desconectar este WhatsApp</button></p>';$('#desc').onclick=async()=>{if(window.confirm?.('Desconectar este WhatsApp do agente?')!==false){await api('/api/desconectar',{method:'POST'});status()}}}
+else if(s.estado==='qr'&&s.qr){w.innerHTML='<div class="qr"><span class="pill wait">Aguardando leitura</span><img alt="QR Code para conectar o WhatsApp" src="'+s.qr+'"><p class="hint">No celular do negócio: WhatsApp › Aparelhos conectados › Conectar um aparelho. Aponte a câmera para este código.</p></div>'}
+else if(s.estado==='erro'){w.innerHTML='<p><span class="pill bad">Erro</span></p><p class="hint">'+(s.erro||'')+'. Tentando de novo…</p>'}
+else{w.innerHTML='<p><span class="pill wait">Preparando conexão…</span></p><p class="hint">O QR Code aparece aqui em alguns segundos.</p>'}}catch(e){}}
+let hist=[];function bolha(t,c){const d=document.createElement('div');d.className='msg '+c;d.textContent=t;$('#chat').append(d);$('#chat').scrollTop=1e6}
+$('#chatform').onsubmit=async e=>{e.preventDefault();const t=$('#chatin').value.trim();if(!t)return;$('#chatin').value='';bolha(t,'c');hist.push({role:'user',content:t});
+try{const r=await api('/api/testar',{method:'POST',body:JSON.stringify({historico:hist})});if(r.resposta){bolha(r.resposta,'a');hist.push({role:'assistant',content:r.resposta})}if(r.resumo!==null)bolha('🔔 Aviso para a equipe: '+(r.resumo||''),'av')}catch(err){bolha('Erro: '+err.message,'av');hist.pop()}};
+$('#limpar').onclick=()=>{hist=[];$('#chat').innerHTML=''};
+carregar();status();setInterval(status,3000);
+</script></body></html>
